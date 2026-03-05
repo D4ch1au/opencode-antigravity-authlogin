@@ -40,6 +40,16 @@ antigravity-debug-*.log
 # Test artifacts
 test-file.ts
 
+# MITM / reverse-engineering artifacts
+tools/__pycache__/
+tools/chromium-net-log.json
+tools/mitm-captures/mitmdump*.log
+
+# Temporary context dumps
+context_ext.txt
+context_full.txt
+nul
+
 # Local subrepos (not part of this project)
 CLIProxyAPI/
 LLM-API-Key-Proxy/
