@@ -1,7 +1,7 @@
 # Antigravity + Gemini CLI OAuth Plugin for Opencode
 
-[![npm version](https://img.shields.io/npm/v/opencode-antigravity-authloginlogin.svg)](https://www.npmjs.com/package/opencode-antigravity-authloginlogin)
-[![npm downloads](https://img.shields.io/npm/dw/opencode-antigravity-authloginlogin.svg)](https://www.npmjs.com/package/opencode-antigravity-authloginlogin)
+[![npm version](https://img.shields.io/npm/v/opencode-antigravity-authlogin.svg)](https://www.npmjs.com/package/opencode-antigravity-authlogin)
+[![npm downloads](https://img.shields.io/npm/dw/opencode-antigravity-authlogin.svg)](https://www.npmjs.com/package/opencode-antigravity-authlogin)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 Enable Opencode to authenticate against **Antigravity** (Google's IDE) via OAuth so you can use Antigravity rate limits and access models like `gemini-3-pro` and `claude-opus-4-6-thinking` with your Google credentials.
@@ -49,7 +49,7 @@ Enable Opencode to authenticate against **Antigravity** (Google's IDE) via OAuth
 Paste this into any LLM agent (Claude Code, OpenCode, Cursor, etc.):
 
 ```
-Install the opencode-antigravity-authlogin plugin and add the Antigravity model definitions to ~/.config/opencode/opencode.json by following: https://raw.githubusercontent.com/D4ch1au/opencode-antigravity-authloginlogin/dev/README.md
+Install the opencode-antigravity-authlogin plugin and add the Antigravity model definitions to ~/.config/opencode/opencode.json by following: https://raw.githubusercontent.com/D4ch1au/opencode-antigravity-authlogin/dev/README.md
 ```
 
 **Option B: Manual setup**
@@ -392,7 +392,7 @@ This usually means an MCP tool name starts with a number (for example, a 1mcp ke
 **Diagnosis:**
 1. Disable all MCP servers in your config
 2. Enable one-by-one until error reappears
-3. Report the specific MCP in a [GitHub issue](https://github.com/D4ch1au/opencode-antigravity-authloginlogin/issues)
+3. Report the specific MCP in a [GitHub issue](https://github.com/D4ch1au/opencode-antigravity-authlogin/issues)
 
 ---
 
@@ -584,7 +584,7 @@ Create `~/.config/opencode/antigravity.json` for optional settings:
 
 ```json
 {
-  "$schema": "https://raw.githubusercontent.com/D4ch1au/opencode-antigravity-authloginlogin/main/assets/antigravity.schema.json"
+  "$schema": "https://raw.githubusercontent.com/D4ch1au/opencode-antigravity-authlogin/main/assets/antigravity.schema.json"
 }
 ```
 
