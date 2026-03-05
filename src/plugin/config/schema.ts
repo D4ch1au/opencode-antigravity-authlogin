@@ -446,11 +446,32 @@ export const AntigravityConfigSchema = z.object({
      * Env override: OPENCODE_ANTIGRAVITY_PROXY
      * @default undefined (direct connection)
      */
-    proxy: z.string().url().optional(),
+     proxy: z.string().url().optional(),
 
+     // =========================================================================
+     // Heartbeat Settings
+     // =========================================================================
+
+     /**
+      * Enable lifecycle API heartbeat to simulate real IDE behavior.
+      * Sends periodic background API calls (cascadeNuxes, fetchUserInfo, etc.)
+      * matching the real Antigravity IDE's network pattern.
+      *
+      * @default true
+      */
+     heartbeat_enabled: z.boolean().default(true),
+
+     /**
+      * Heartbeat interval in minutes.
+      * The real IDE sends heartbeats approximately every 5 minutes.
+      *
+      * @default 5
+      */
+     heartbeat_interval_minutes: z.number().min(1).max(30).default(5),
+
+     // =========================================================================
+     // Auto-Update
     // =========================================================================
-    // Auto-Update
-   // =========================================================================
   
   /**
    * Enable automatic plugin updates.
@@ -498,6 +519,8 @@ export const DEFAULT_CONFIG: AntigravityConfig = {
   soft_quota_threshold_percent: 90,
   quota_refresh_interval_minutes: 15,
   soft_quota_cache_ttl_minutes: "auto",
+  heartbeat_enabled: true,
+  heartbeat_interval_minutes: 5,
   auto_update: true,
   signature_cache: {
     enabled: true,

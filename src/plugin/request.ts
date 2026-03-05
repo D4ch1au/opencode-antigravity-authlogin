@@ -1546,7 +1546,7 @@ export function prepareAntigravityRequest(
     const fingerprint = options?.fingerprint ?? getSessionFingerprint();
     const fingerprintHeaders = buildFingerprintHeaders(fingerprint);
 
-    headers.set("User-Agent", fingerprintHeaders["User-Agent"] || selectedHeaders["User-Agent"]);
+    headers.set("User-Agent", fingerprintHeaders["User-Agent"] ?? selectedHeaders["User-Agent"] ?? selectedHeaders["User-Agent"]!);
     headers.set("X-Goog-Api-Client", ANTIGRAVITY_API_CLIENT);
   } else {
     // Gemini CLI mode: match opencode-gemini-auth Code Assist header set exactly

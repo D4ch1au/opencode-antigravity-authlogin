@@ -11,6 +11,8 @@ describe("GEMINI_CLI_HEADERS", () => {
       "User-Agent": "google-api-nodejs-client/10.3.0",
       "X-Goog-Api-Client": "gl-node/22.21.1",
       "Client-Metadata": "ideType=IDE_UNSPECIFIED,platform=PLATFORM_UNSPECIFIED,pluginType=GEMINI",
+      "accept": "*/*",
+      "accept-encoding": "gzip, deflate, br",
     })
   })
 })
@@ -23,6 +25,8 @@ describe("getRandomizedHeaders", () => {
         "User-Agent": "google-api-nodejs-client/10.3.0",
         "X-Goog-Api-Client": "gl-node/22.21.1",
         "Client-Metadata": "ideType=IDE_UNSPECIFIED,platform=PLATFORM_UNSPECIFIED,pluginType=GEMINI",
+        "accept": "*/*",
+        "accept-encoding": "gzip, deflate, br",
       })
     })
 

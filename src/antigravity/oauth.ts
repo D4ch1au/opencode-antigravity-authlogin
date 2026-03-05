@@ -241,6 +241,8 @@ export async function exchangeAntigravity(
         headers: {
           Authorization: `Bearer ${tokenPayload.access_token}`,
           "User-Agent": GEMINI_CLI_HEADERS["User-Agent"],
+          "accept": "*/*",
+          "accept-encoding": "gzip, deflate, br",
         },
       },
     );

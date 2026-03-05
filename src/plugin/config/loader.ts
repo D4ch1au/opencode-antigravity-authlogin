@@ -36,6 +36,16 @@ function getConfigDir(): string {
   return join(xdgConfig, "opencode");
 }
 
+function parseBooleanOverride(value: string | undefined): boolean | undefined {
+  if (value === "1") {
+    return true
+  }
+  if (value === "0") {
+    return false
+  }
+  return undefined
+}
+
 /**
  * Get the user-level config file path.
  */
@@ -139,6 +149,11 @@ export function loadConfig(directory: string): AntigravityConfig {
   // Environment variable overrides
   if (process.env.OPENCODE_ANTIGRAVITY_PROXY) {
     config.proxy = process.env.OPENCODE_ANTIGRAVITY_PROXY;
+  }
+
+  const heartbeatOverride = parseBooleanOverride(process.env.OPENCODE_ANTIGRAVITY_HEARTBEAT)
+  if (heartbeatOverride !== undefined) {
+    config.heartbeat_enabled = heartbeatOverride
   }
 
   // Standard proxy env fallback (only when explicit config is absent)

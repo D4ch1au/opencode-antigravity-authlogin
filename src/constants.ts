@@ -91,12 +91,14 @@ export function setAntigravityVersion(version: string): void {
 /** @deprecated Use getAntigravityVersion() for runtime access. */
 export const ANTIGRAVITY_VERSION = ANTIGRAVITY_VERSION_FALLBACK;
 
-export function getAntigravityHeaders(): HeaderSet {
+export function getAntigravityHeaders(): Record<string, string> {
   const platform = process.platform === "win32" ? "windows" : process.platform === "darwin" ? "darwin" : "linux";
   const arch = process.arch === "x64" ? "amd64" : process.arch === "ia32" ? "386" : process.arch;
   return {
     "User-Agent": `antigravity/${getAntigravityVersion()} ${platform}/${arch} ${ANTIGRAVITY_NODEJS_CLIENT}`,
     "X-Goog-Api-Client": ANTIGRAVITY_API_CLIENT,
+    "accept": "*/*",
+    "accept-encoding": "gzip, deflate, br",
   };
 }
 
@@ -104,12 +106,16 @@ export function getAntigravityHeaders(): HeaderSet {
 export const ANTIGRAVITY_HEADERS = {
   "User-Agent": `antigravity/${ANTIGRAVITY_VERSION} ${process.platform === "win32" ? "windows" : process.platform === "darwin" ? "darwin" : "linux"}/${process.arch === "x64" ? "amd64" : process.arch === "ia32" ? "386" : process.arch} ${ANTIGRAVITY_NODEJS_CLIENT}`,
   "X-Goog-Api-Client": ANTIGRAVITY_API_CLIENT,
+  "accept": "*/*",
+  "accept-encoding": "gzip, deflate, br",
 } as const;
 
 export const GEMINI_CLI_HEADERS = {
   "User-Agent": "google-api-nodejs-client/10.3.0",
   "X-Goog-Api-Client": "gl-node/22.21.1",
   "Client-Metadata": "ideType=IDE_UNSPECIFIED,platform=PLATFORM_UNSPECIFIED,pluginType=GEMINI",
+  "accept": "*/*",
+  "accept-encoding": "gzip, deflate, br",
 } as const;
 
 const ANTIGRAVITY_PLATFORMS = ["windows/amd64", "darwin/arm64", "darwin/amd64"] as const;
@@ -124,12 +130,14 @@ export type HeaderSet = {
   "Client-Metadata"?: string;
 };
 
-export function getRandomizedHeaders(style: HeaderStyle, model?: string): HeaderSet {
+export function getRandomizedHeaders(style: HeaderStyle, model?: string): Record<string, string> {
   if (style === "gemini-cli") {
     return {
       "User-Agent": GEMINI_CLI_HEADERS["User-Agent"],
       "X-Goog-Api-Client": GEMINI_CLI_HEADERS["X-Goog-Api-Client"],
       "Client-Metadata": GEMINI_CLI_HEADERS["Client-Metadata"],
+      "accept": "*/*",
+      "accept-encoding": "gzip, deflate, br",
     };
   }
   const platform = randomFrom(ANTIGRAVITY_PLATFORMS);
@@ -138,6 +146,8 @@ export function getRandomizedHeaders(style: HeaderStyle, model?: string): Header
     "User-Agent": `antigravity/${getAntigravityVersion()} ${platform} ${ANTIGRAVITY_NODEJS_CLIENT}`,
     "X-Goog-Api-Client": ANTIGRAVITY_API_CLIENT,
     "Client-Metadata": `{"ideType":"ANTIGRAVITY","platform":"${metadataPlatform}","pluginType":"GEMINI"}`,
+    "accept": "*/*",
+    "accept-encoding": "gzip, deflate, br",
   };
 }
 

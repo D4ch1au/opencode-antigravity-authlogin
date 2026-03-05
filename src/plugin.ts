@@ -53,6 +53,7 @@ import { initHealthTracker, getHealthTracker, initTokenTracker, getTokenTracker 
 import { initAntigravityVersion } from "./plugin/version";
 import { executeSearch } from "./plugin/search";
 import { getProxyDispatcher, initGlobalProxy, proxyFetch } from "./plugin/proxy";
+import { startHeartbeat, stopHeartbeat } from "./plugin/heartbeat"
 import type {
   GetAuth,
   LoaderResult,
@@ -1457,6 +1458,7 @@ export const createAntigravityPlugin = (providerId: string) => async (
       
       // If OpenCode has no valid OAuth auth, clear any stale account storage
       if (!isOAuthAuth(auth)) {
+        stopHeartbeat()
         try {
           await clearAccounts();
         } catch {
@@ -1488,6 +1490,38 @@ export const createAntigravityPlugin = (providerId: string) => async (
         });
         refreshQueue.setAccountManager(accountManager);
         refreshQueue.start();
+      }
+
+      // Initialize lifecycle heartbeat (simulates real IDE background API calls)
+      if (config.heartbeat_enabled) {
+        startHeartbeat({
+          getAccessToken: async () => {
+            const latestAuth = await getAuth()
+            if (!isOAuthAuth(latestAuth)) return undefined
+            if (accessTokenExpired(latestAuth)) {
+              const refreshed = await refreshAccessToken(latestAuth, client, providerId)
+              return refreshed?.access
+            }
+            return latestAuth.access
+          },
+          getProjectId: () => {
+            // Use the first enabled account's managedProjectId
+            const accounts = accountManager.getAccounts()
+            const firstEnabled = accounts.find(a => a.enabled !== false)
+            return firstEnabled?.parts?.managedProjectId || firstEnabled?.parts?.projectId || undefined
+          },
+          getDispatcher: () => {
+            const accounts = accountManager.getAccounts()
+            const firstEnabled = accounts.find(a => a.enabled !== false)
+            if (firstEnabled) {
+              return resolveAccountProxyDispatcher(firstEnabled)
+            }
+            return getProxyDispatcher()
+          },
+          intervalMs: config.heartbeat_interval_minutes * 60 * 1000,
+        })
+      } else {
+        stopHeartbeat()
       }
 
       if (isDebugEnabled()) {
