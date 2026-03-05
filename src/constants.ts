@@ -130,16 +130,7 @@ export type HeaderSet = {
   "Client-Metadata"?: string;
 };
 
-export function getRandomizedHeaders(style: HeaderStyle, model?: string): Record<string, string> {
-  if (style === "gemini-cli") {
-    return {
-      "User-Agent": GEMINI_CLI_HEADERS["User-Agent"],
-      "X-Goog-Api-Client": GEMINI_CLI_HEADERS["X-Goog-Api-Client"],
-      "Client-Metadata": GEMINI_CLI_HEADERS["Client-Metadata"],
-      "accept": "*/*",
-      "accept-encoding": "gzip, deflate, br",
-    };
-  }
+export function getRandomizedHeaders(_style: HeaderStyle, _model?: string): Record<string, string> {
   const platform = randomFrom(ANTIGRAVITY_PLATFORMS);
   const metadataPlatform = platform.startsWith("windows") ? "WINDOWS" : "MACOS";
   return {

@@ -1,41 +1,10 @@
 import { describe, it, expect } from "vitest"
 import {
-  GEMINI_CLI_HEADERS,
   getRandomizedHeaders,
   type HeaderSet,
 } from "./constants.ts"
 
-describe("GEMINI_CLI_HEADERS", () => {
-  it("matches Code Assist headers from opencode-gemini-auth", () => {
-    expect(GEMINI_CLI_HEADERS).toEqual({
-      "User-Agent": "google-api-nodejs-client/10.3.0",
-      "X-Goog-Api-Client": "gl-node/22.21.1",
-      "Client-Metadata": "ideType=IDE_UNSPECIFIED,platform=PLATFORM_UNSPECIFIED,pluginType=GEMINI",
-      "accept": "*/*",
-      "accept-encoding": "gzip, deflate, br",
-    })
-  })
-})
-
 describe("getRandomizedHeaders", () => {
-  describe("gemini-cli style", () => {
-    it("returns static Code Assist headers", () => {
-      const headers = getRandomizedHeaders("gemini-cli", "gemini-2.5-pro")
-      expect(headers).toEqual({
-        "User-Agent": "google-api-nodejs-client/10.3.0",
-        "X-Goog-Api-Client": "gl-node/22.21.1",
-        "Client-Metadata": "ideType=IDE_UNSPECIFIED,platform=PLATFORM_UNSPECIFIED,pluginType=GEMINI",
-        "accept": "*/*",
-        "accept-encoding": "gzip, deflate, br",
-      })
-    })
-
-    it("ignores requested model and keeps static User-Agent", () => {
-      const headers = getRandomizedHeaders("gemini-cli", "gemini-3-pro-preview")
-      expect(headers["User-Agent"]).toBe("google-api-nodejs-client/10.3.0")
-    })
-  })
-
   describe("antigravity style", () => {
     it("returns all three headers", () => {
       const headers = getRandomizedHeaders("antigravity")
@@ -67,6 +36,12 @@ describe("getRandomizedHeaders", () => {
         const headers = getRandomizedHeaders("antigravity")
         expect(headers["User-Agent"]).not.toMatch(/linux\//)
       }
+    })
+
+    it("always returns antigravity headers regardless of style parameter", () => {
+      const headers = getRandomizedHeaders("gemini-cli" as any)
+      expect(headers["User-Agent"]).toMatch(/^antigravity\//)
+      expect(headers["X-Goog-Api-Client"]).toBe("gl-node/22.21.1")
     })
   })
 })

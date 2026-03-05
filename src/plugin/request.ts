@@ -2,8 +2,6 @@ import crypto from "node:crypto";
 import {
   ANTIGRAVITY_API_CLIENT,
   ANTIGRAVITY_ENDPOINT,
-  GEMINI_CLI_ENDPOINT,
-  GEMINI_CLI_HEADERS,
   EMPTY_SCHEMA_PLACEHOLDER_NAME,
   EMPTY_SCHEMA_PLACEHOLDER_DESCRIPTION,
   SKIP_THOUGHT_SIGNATURE,
@@ -811,8 +809,7 @@ export function prepareAntigravityRequest(
   let effectiveModel = resolved.actualModel;
 
   const streaming = rawAction === STREAM_ACTION;
-  const defaultEndpoint = headerStyle === "gemini-cli" ? GEMINI_CLI_ENDPOINT : ANTIGRAVITY_ENDPOINT;
-  const baseEndpoint = endpointOverride ?? defaultEndpoint;
+  const baseEndpoint = endpointOverride ?? ANTIGRAVITY_ENDPOINT;
   const transformedUrl = `${baseEndpoint}/v1internal:${rawAction}${streaming ? "?alt=sse" : ""}`;
 
   const isClaude = isClaudeModel(resolved.actualModel);
@@ -1537,23 +1534,15 @@ export function prepareAntigravityRequest(
     }
   }
 
-  if (headerStyle === "antigravity") {
-    // Use randomized headers as the fallback pool for Antigravity mode
-    const selectedHeaders = getRandomizedHeaders("antigravity", requestedModel);
+  // Antigravity IDE fingerprint: use fingerprinted User-Agent with fixed API client.
+  // Client-Metadata stays in request body metadata (project.ts), not as a header.
+  const selectedHeaders = getRandomizedHeaders("antigravity", requestedModel);
+  const fingerprint = options?.fingerprint ?? getSessionFingerprint();
+  const fingerprintHeaders = buildFingerprintHeaders(fingerprint);
 
-    // Antigravity mode: use fingerprinted User-Agent with fixed API client.
-    // Client-Metadata stays in request body metadata (project.ts), not as a header.
-    const fingerprint = options?.fingerprint ?? getSessionFingerprint();
-    const fingerprintHeaders = buildFingerprintHeaders(fingerprint);
+  headers.set("User-Agent", fingerprintHeaders["User-Agent"] ?? selectedHeaders["User-Agent"] ?? selectedHeaders["User-Agent"]!);
+  headers.set("X-Goog-Api-Client", ANTIGRAVITY_API_CLIENT);
 
-    headers.set("User-Agent", fingerprintHeaders["User-Agent"] ?? selectedHeaders["User-Agent"] ?? selectedHeaders["User-Agent"]!);
-    headers.set("X-Goog-Api-Client", ANTIGRAVITY_API_CLIENT);
-  } else {
-    // Gemini CLI mode: match opencode-gemini-auth Code Assist header set exactly
-    headers.set("User-Agent", GEMINI_CLI_HEADERS["User-Agent"]);
-    headers.set("X-Goog-Api-Client", GEMINI_CLI_HEADERS["X-Goog-Api-Client"]);
-    headers.set("Client-Metadata", GEMINI_CLI_HEADERS["Client-Metadata"]);
-  }
   return {
     request: transformedUrl,
     init: {
