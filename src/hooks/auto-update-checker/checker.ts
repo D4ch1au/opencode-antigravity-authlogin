@@ -11,6 +11,7 @@ import {
   USER_OPENCODE_CONFIG_JSONC,
 } from "./constants";
 import { logAutoUpdate } from "./logging";
+import { proxyFetch } from "../../plugin/proxy";
 
 export function isLocalDevMode(directory: string): boolean {
   return getLocalDevPath(directory) !== null;
@@ -215,7 +216,7 @@ export async function getLatestVersion(): Promise<string | null> {
   const timeoutId = setTimeout(() => controller.abort(), NPM_FETCH_TIMEOUT);
 
   try {
-    const response = await fetch(NPM_REGISTRY_URL, {
+    const response = await proxyFetch(NPM_REGISTRY_URL, {
       signal: controller.signal,
       headers: { Accept: "application/json" },
     });

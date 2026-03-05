@@ -78,14 +78,14 @@ describe("quota fallback direction", () => {
 });
 
 describe("header style resolution", () => {
-  it("uses gemini-cli for unsuffixed Gemini models when cli_first is enabled", () => {
+  it("always uses antigravity regardless of cli_first setting", () => {
     const headerStyle = getHeaderStyleFromUrl?.(
       "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash:streamGenerateContent",
       "gemini",
       true,
     );
 
-    expect(headerStyle).toBe("gemini-cli");
+    expect(headerStyle).toBe("antigravity");
   });
 
   it("keeps antigravity for unsuffixed Gemini models when cli_first is disabled", () => {
@@ -120,7 +120,7 @@ describe("header style resolution", () => {
 });
 
 describe("header routing decision", () => {
-  it("defaults to antigravity-first for unsuffixed Gemini when cli_first is disabled", () => {
+  it("defaults to antigravity with no quota fallback for unsuffixed Gemini when cli_first is disabled", () => {
     const decision = resolveHeaderRoutingDecision?.(
       "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash:streamGenerateContent",
       "gemini",
@@ -133,11 +133,11 @@ describe("header routing decision", () => {
       cliFirst: false,
       preferredHeaderStyle: "antigravity",
       explicitQuota: false,
-      allowQuotaFallback: true,
+      allowQuotaFallback: false,
     });
   });
 
-  it("uses gemini-cli-first for unsuffixed Gemini when cli_first is enabled", () => {
+  it("forces antigravity even when cli_first is enabled (no gemini-cli fallback)", () => {
     const decision = resolveHeaderRoutingDecision?.(
       "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash:streamGenerateContent",
       "gemini",
@@ -148,13 +148,13 @@ describe("header routing decision", () => {
 
     expect(decision).toMatchObject({
       cliFirst: true,
-      preferredHeaderStyle: "gemini-cli",
+      preferredHeaderStyle: "antigravity",
       explicitQuota: false,
-      allowQuotaFallback: true,
+      allowQuotaFallback: false,
     });
   });
 
-  it("keeps explicit antigravity prefix as primary route while fallback remains available", () => {
+  it("keeps explicit antigravity prefix as primary route with no fallback", () => {
     const decision = resolveHeaderRoutingDecision?.(
       "https://generativelanguage.googleapis.com/v1beta/models/antigravity-gemini-3-flash:streamGenerateContent",
       "gemini",
@@ -167,11 +167,11 @@ describe("header routing decision", () => {
       cliFirst: true,
       preferredHeaderStyle: "antigravity",
       explicitQuota: true,
-      allowQuotaFallback: true,
+      allowQuotaFallback: false,
     });
   });
 
-  it("ignores legacy quota_fallback when deciding Gemini fallback availability", () => {
+  it("disables quota fallback even with legacy quota_fallback setting", () => {
     const decision = resolveHeaderRoutingDecision?.(
       "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash:streamGenerateContent",
       "gemini",
@@ -185,7 +185,7 @@ describe("header routing decision", () => {
       cliFirst: false,
       preferredHeaderStyle: "antigravity",
       explicitQuota: false,
-      allowQuotaFallback: true,
+      allowQuotaFallback: false,
     });
   });
 });

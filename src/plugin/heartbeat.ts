@@ -2,9 +2,9 @@ import {
   ANTIGRAVITY_API_CLIENT,
   ANTIGRAVITY_ENDPOINT_DAILY,
   getAntigravityHeaders,
-} from "../constants.ts"
-import { createLogger } from "./logger.ts"
-import { proxyFetch } from "./proxy.ts"
+} from "../constants"
+import { createLogger } from "./logger"
+import { proxyFetch } from "./proxy"
 
 const DEFAULT_HEARTBEAT_INTERVAL_MS = 5 * 60 * 1000
 const REQUEST_TIMEOUT_MS = 10 * 1000

@@ -14,6 +14,7 @@
 
 import { getAntigravityVersion, setAntigravityVersion } from "../constants";
 import { createLogger } from "./logger";
+import { proxyFetch } from "./proxy";
 
 const VERSION_URL = "https://antigravity-auto-updater-974169037036.us-central1.run.app";
 const CHANGELOG_URL = "https://antigravity.google/changelog";
@@ -32,7 +33,7 @@ async function tryFetchVersion(url: string, maxChars?: number): Promise<string |
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
-    const response = await fetch(url, { signal: controller.signal });
+    const response = await proxyFetch(url, { signal: controller.signal });
     if (!response.ok) return null;
     let text = await response.text();
     if (maxChars) text = text.slice(0, maxChars);

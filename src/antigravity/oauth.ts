@@ -4,13 +4,13 @@ import {
   ANTIGRAVITY_API_CLIENT,
   ANTIGRAVITY_CLIENT_ID,
   ANTIGRAVITY_CLIENT_SECRET,
+  ANTIGRAVITY_NODEJS_CLIENT,
   ANTIGRAVITY_REDIRECT_URI,
   ANTIGRAVITY_SCOPES,
   ANTIGRAVITY_ENDPOINT_FALLBACKS,
   ANTIGRAVITY_LOAD_ENDPOINTS,
   getAntigravityVersion,
   getAntigravityHeaders,
-  GEMINI_CLI_HEADERS,
 } from "../constants";
 import { createLogger } from "../plugin/logger";
 import { calculateTokenExpiry } from "../plugin/auth";
@@ -215,7 +215,7 @@ export async function exchangeAntigravity(
         "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
         "Accept": "*/*",
         "Accept-Encoding": "gzip, deflate, br",
-        "User-Agent": GEMINI_CLI_HEADERS["User-Agent"],
+        "User-Agent": ANTIGRAVITY_NODEJS_CLIENT,
         "X-Goog-Api-Client": ANTIGRAVITY_API_CLIENT,
       },
       body: new URLSearchParams({
@@ -240,7 +240,7 @@ export async function exchangeAntigravity(
       {
         headers: {
           Authorization: `Bearer ${tokenPayload.access_token}`,
-          "User-Agent": GEMINI_CLI_HEADERS["User-Agent"],
+          "User-Agent": ANTIGRAVITY_NODEJS_CLIENT,
           "accept": "*/*",
           "accept-encoding": "gzip, deflate, br",
         },

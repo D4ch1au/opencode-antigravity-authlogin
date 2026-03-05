@@ -3514,7 +3514,9 @@ function resolveHeaderRoutingDecision(
     cliFirst,
     preferredHeaderStyle,
     explicitQuota,
-    allowQuotaFallback: family === "gemini",
+    // Disable quota fallback to prevent switching to gemini-cli headers.
+    // All requests must use Antigravity IDE fingerprint exclusively.
+    allowQuotaFallback: false,
   };
 }
 
@@ -3523,19 +3525,13 @@ function getCliFirst(config: AntigravityConfig): boolean {
 }
 
 function getHeaderStyleFromUrl(
-  urlString: string,
-  family: ModelFamily,
-  cliFirst: boolean = false,
+  _urlString: string,
+  _family: ModelFamily,
+  _cliFirst: boolean = false,
 ): HeaderStyle {
-  if (family === "claude") {
-    return "antigravity";
-  }
-  const modelWithSuffix = extractModelFromUrlWithSuffix(urlString);
-  if (!modelWithSuffix) {
-    return cliFirst ? "gemini-cli" : "antigravity";
-  }
-  const { quotaPreference } = resolveModelWithTier(modelWithSuffix, { cli_first: cliFirst });
-  return quotaPreference ?? "antigravity";
+  // Force all requests to use Antigravity IDE fingerprint.
+  // Gemini CLI headers expose non-IDE characteristics and may trigger detection.
+  return "antigravity";
 }
 
 function isExplicitQuotaFromUrl(urlString: string): boolean {
