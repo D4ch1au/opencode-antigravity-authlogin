@@ -1,17 +1,20 @@
 import { generatePKCE } from "@openauthjs/openauth/pkce";
 
 import {
+  ANTIGRAVITY_API_CLIENT,
   ANTIGRAVITY_CLIENT_ID,
   ANTIGRAVITY_CLIENT_SECRET,
   ANTIGRAVITY_REDIRECT_URI,
   ANTIGRAVITY_SCOPES,
   ANTIGRAVITY_ENDPOINT_FALLBACKS,
   ANTIGRAVITY_LOAD_ENDPOINTS,
+  getAntigravityVersion,
   getAntigravityHeaders,
   GEMINI_CLI_HEADERS,
 } from "../constants";
 import { createLogger } from "../plugin/logger";
 import { calculateTokenExpiry } from "../plugin/auth";
+import { proxyFetch } from "../plugin/proxy";
 
 const log = createLogger("oauth");
 
@@ -123,7 +126,7 @@ async function fetchWithTimeout(
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    return await fetch(url, { ...options, signal: controller.signal });
+    return await proxyFetch(url, { ...options, signal: controller.signal });
   } finally {
     clearTimeout(timeout);
   }
@@ -134,8 +137,8 @@ async function fetchProjectID(accessToken: string): Promise<string> {
   const loadHeaders: Record<string, string> = {
     Authorization: `Bearer ${accessToken}`,
     "Content-Type": "application/json",
-    "User-Agent": GEMINI_CLI_HEADERS["User-Agent"],
-    "Client-Metadata": getAntigravityHeaders()["Client-Metadata"],
+    ...getAntigravityHeaders(),
+    "X-Goog-Api-Client": ANTIGRAVITY_API_CLIENT,
   };
 
   const loadEndpoints = Array.from(
@@ -150,9 +153,9 @@ async function fetchProjectID(accessToken: string): Promise<string> {
         headers: loadHeaders,
         body: JSON.stringify({
           metadata: {
-            ideType: "ANTIGRAVITY",
-            platform: process.platform === "win32" ? "WINDOWS" : "MACOS",
-            pluginType: "GEMINI",
+            ide_type: "ANTIGRAVITY",
+            ide_version: getAntigravityVersion(),
+            ide_name: "antigravity",
           },
         }),
       });
@@ -206,13 +209,14 @@ export async function exchangeAntigravity(
     const { verifier, projectId } = decodeState(state);
 
     const startTime = Date.now();
-    const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+    const tokenResponse = await proxyFetch("https://oauth2.googleapis.com/token", {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
         "Accept": "*/*",
         "Accept-Encoding": "gzip, deflate, br",
         "User-Agent": GEMINI_CLI_HEADERS["User-Agent"],
+        "X-Goog-Api-Client": ANTIGRAVITY_API_CLIENT,
       },
       body: new URLSearchParams({
         client_id: ANTIGRAVITY_CLIENT_ID,
@@ -231,7 +235,7 @@ export async function exchangeAntigravity(
 
     const tokenPayload = (await tokenResponse.json()) as AntigravityTokenResponse;
 
-    const userInfoResponse = await fetch(
+    const userInfoResponse = await proxyFetch(
       "https://www.googleapis.com/oauth2/v1/userinfo?alt=json",
       {
         headers: {

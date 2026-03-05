@@ -6,6 +6,7 @@ import {
 import { accessTokenExpired, formatRefreshParts, parseRefreshParts } from "./auth";
 import { logQuotaFetch, logQuotaStatus } from "./debug";
 import { ensureProjectContext } from "./project";
+import { getProxyDispatcher, proxyFetch } from "./proxy";
 import { refreshAccessToken } from "./token";
 import { getModelFamily } from "./transform/model-resolver";
 import type { PluginClient, OAuthAuthDetails } from "./types";
@@ -172,11 +173,16 @@ function aggregateQuota(models?: Record<string, FetchAvailableModelEntry>): Quot
   return { groups, modelCount: totalCount };
 }
 
-async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs = FETCH_TIMEOUT_MS): Promise<Response> {
+async function fetchWithTimeout(
+  url: string,
+  options: RequestInit,
+  timeoutMs = FETCH_TIMEOUT_MS,
+  dispatcher?: RequestInit["dispatcher"],
+): Promise<Response> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    return await fetch(url, { ...options, signal: controller.signal });
+    return await proxyFetch(url, { ...options, signal: controller.signal, dispatcher });
   } finally {
     clearTimeout(timeout);
   }
@@ -185,21 +191,29 @@ async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs = F
 async function fetchAvailableModels(
   accessToken: string,
   projectId: string,
+  dispatcher?: RequestInit["dispatcher"],
 ): Promise<FetchAvailableModelsResponse> {
   const endpoint = ANTIGRAVITY_ENDPOINT_PROD;
-  const quotaUserAgent = getAntigravityHeaders()["User-Agent"] || "antigravity/windows/amd64";
+  const antigravityHeaders = getAntigravityHeaders();
+  const quotaUserAgent = antigravityHeaders["User-Agent"] || "antigravity/windows/amd64";
   const errors: string[] = [];
 
   const body = projectId ? { project: projectId } : {};
-  const response = await fetchWithTimeout(`${endpoint}/v1internal:fetchAvailableModels`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-      "User-Agent": quotaUserAgent,
+  const response = await fetchWithTimeout(
+    `${endpoint}/v1internal:fetchAvailableModels`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+        ...antigravityHeaders,
+        "User-Agent": quotaUserAgent,
+      },
+      body: JSON.stringify(body),
     },
-    body: JSON.stringify(body),
-  });
+    FETCH_TIMEOUT_MS,
+    dispatcher,
+  );
 
   if (response.ok) {
     return (await response.json()) as FetchAvailableModelsResponse;
@@ -217,8 +231,10 @@ async function fetchAvailableModels(
 async function fetchGeminiCliQuota(
   accessToken: string,
   projectId: string,
+  dispatcher?: RequestInit["dispatcher"],
 ): Promise<RetrieveUserQuotaResponse> {
   const endpoint = ANTIGRAVITY_ENDPOINT_PROD;
+  const antigravityHeaders = getAntigravityHeaders();
   // Use Gemini CLI user-agent to get CLI quota buckets (not Antigravity buckets)
   const platform = process.platform || "darwin";
   const arch = process.arch || "arm64";
@@ -227,15 +243,21 @@ async function fetchGeminiCliQuota(
   const body = projectId ? { project: projectId } : {};
   
   try {
-    const response = await fetchWithTimeout(`${endpoint}/v1internal:retrieveUserQuota`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-        "User-Agent": geminiCliUserAgent,
+    const response = await fetchWithTimeout(
+      `${endpoint}/v1internal:retrieveUserQuota`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+          ...antigravityHeaders,
+          "User-Agent": geminiCliUserAgent,
+        },
+        body: JSON.stringify(body),
       },
-      body: JSON.stringify(body),
-    });
+      FETCH_TIMEOUT_MS,
+      dispatcher,
+    );
 
     if (response.ok) {
       const data = (await response.json()) as RetrieveUserQuotaResponse;
@@ -318,19 +340,23 @@ export async function checkAccountsQuota(
 
   for (const [index, account] of accounts.entries()) {
     const disabled = account.enabled === false;
+    const accountProxyDispatcher = getProxyDispatcher(
+      account.proxy,
+      account.refreshToken || account.email || `account-${index}`,
+    );
 
     let auth = buildAuthFromAccount(account);
 
     try {
       if (accessTokenExpired(auth)) {
-        const refreshed = await refreshAccessToken(auth, client, providerId);
+        const refreshed = await refreshAccessToken(auth, client, providerId, accountProxyDispatcher);
         if (!refreshed) {
           throw new Error("Token refresh failed");
         }
         auth = refreshed;
       }
 
-      const projectContext = await ensureProjectContext(auth);
+      const projectContext = await ensureProjectContext(auth, accountProxyDispatcher);
       auth = projectContext.auth;
       const updatedAccount = applyAccountUpdates(account, auth);
 
@@ -339,9 +365,9 @@ export async function checkAccountsQuota(
       
       // Fetch both Antigravity and Gemini CLI quotas in parallel
       const [antigravityResponse, geminiCliResponse] = await Promise.all([
-        fetchAvailableModels(auth.access ?? "", projectContext.effectiveProjectId)
+        fetchAvailableModels(auth.access ?? "", projectContext.effectiveProjectId, accountProxyDispatcher)
           .catch((error): FetchAvailableModelsResponse => ({ models: undefined })),
-        fetchGeminiCliQuota(auth.access ?? "", projectContext.effectiveProjectId),
+        fetchGeminiCliQuota(auth.access ?? "", projectContext.effectiveProjectId, accountProxyDispatcher),
       ]);
 
       // Process Antigravity quota

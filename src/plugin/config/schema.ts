@@ -422,15 +422,35 @@ export const AntigravityConfigSchema = z.object({
    // Token Bucket (for hybrid strategy)
    // =========================================================================
    
-   token_bucket: z.object({
-     max_tokens: z.number().min(1).max(1000).default(50),
-     regeneration_rate_per_minute: z.number().min(0.1).max(60).default(6),
-     initial_tokens: z.number().min(1).max(1000).default(50),
-   }).optional(),
-   
+    token_bucket: z.object({
+      max_tokens: z.number().min(1).max(1000).default(50),
+      regeneration_rate_per_minute: z.number().min(0.1).max(60).default(6),
+      initial_tokens: z.number().min(1).max(1000).default(50),
+    }).optional(),
+
+    // =========================================================================
+    // Proxy Settings
+    // =========================================================================
+
+    /**
+     * Proxy URL for all API requests to googleapis.com.
+     * Supports HTTP, HTTPS, and SOCKS5 protocols.
+     *
+     * Examples:
+     *   "http://proxy.example.com:8080"
+     *   "socks5://user:pass@proxy.example.com:1080"
+     *
+     * Per-account proxy can be set in antigravity-accounts.json.
+     * Account proxy takes priority over this global setting.
+     *
+     * Env override: OPENCODE_ANTIGRAVITY_PROXY
+     * @default undefined (direct connection)
+     */
+    proxy: z.string().url().optional(),
+
+    // =========================================================================
+    // Auto-Update
    // =========================================================================
-   // Auto-Update
-  // =========================================================================
   
   /**
    * Enable automatic plugin updates.

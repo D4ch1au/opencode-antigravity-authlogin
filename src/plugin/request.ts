@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import {
+  ANTIGRAVITY_API_CLIENT,
   ANTIGRAVITY_ENDPOINT,
   GEMINI_CLI_ENDPOINT,
   GEMINI_CLI_HEADERS,
@@ -1540,13 +1541,13 @@ export function prepareAntigravityRequest(
     // Use randomized headers as the fallback pool for Antigravity mode
     const selectedHeaders = getRandomizedHeaders("antigravity", requestedModel);
 
-    // Antigravity mode: Match Antigravity Manager behavior
-    // AM only sends User-Agent on content requests — no X-Goog-Api-Client, no Client-Metadata header
-    // (ideType=ANTIGRAVITY goes in request body metadata via project.ts, not as a header)
+    // Antigravity mode: use fingerprinted User-Agent with fixed API client.
+    // Client-Metadata stays in request body metadata (project.ts), not as a header.
     const fingerprint = options?.fingerprint ?? getSessionFingerprint();
     const fingerprintHeaders = buildFingerprintHeaders(fingerprint);
 
     headers.set("User-Agent", fingerprintHeaders["User-Agent"] || selectedHeaders["User-Agent"]);
+    headers.set("X-Goog-Api-Client", ANTIGRAVITY_API_CLIENT);
   } else {
     // Gemini CLI mode: match opencode-gemini-auth Code Assist header set exactly
     headers.set("User-Agent", GEMINI_CLI_HEADERS["User-Agent"]);

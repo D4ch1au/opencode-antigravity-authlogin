@@ -7,6 +7,7 @@
  */
 
 import {
+  ANTIGRAVITY_API_CLIENT,
   ANTIGRAVITY_ENDPOINT,
   getAntigravityHeaders,
   SEARCH_MODEL,
@@ -14,6 +15,7 @@ import {
   SEARCH_SYSTEM_INSTRUCTION,
 } from "../constants";
 import { createLogger } from "./logger";
+import { proxyFetch } from "./proxy";
 
 const log = createLogger("search");
 
@@ -225,6 +227,7 @@ export async function executeSearch(
   accessToken: string,
   projectId: string,
   abortSignal?: AbortSignal,
+  dispatcher?: RequestInit["dispatcher"],
 ): Promise<string> {
   const { query, urls, thinking = true } = args;
 
@@ -281,15 +284,17 @@ export async function executeSearch(
   });
 
   try {
-    const response = await fetch(url, {
+    const response = await proxyFetch(url, {
       method: "POST",
       headers: {
         ...getAntigravityHeaders(),
+        "X-Goog-Api-Client": ANTIGRAVITY_API_CLIENT,
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(wrappedBody),
       signal: abortSignal ?? AbortSignal.timeout(SEARCH_TIMEOUT_MS),
+      dispatcher,
     });
 
     if (!response.ok) {

@@ -10,7 +10,7 @@
 
 import * as crypto from "node:crypto";
 import * as os from "node:os";
-import { getAntigravityVersion } from "../constants";
+import { getAntigravityVersion, ANTIGRAVITY_NODEJS_CLIENT } from "../constants";
 
 const OS_VERSIONS: Record<string, string[]> = {
   darwin: ["10.15.7", "11.6.8", "12.6.3", "13.5.2", "14.2.1", "14.5"],
@@ -29,13 +29,6 @@ const PLATFORMS = [
   "MACOS",
 ] as const;
 
-const SDK_CLIENTS = [
-  "google-cloud-sdk vscode_cloudshelleditor/0.1",
-  "google-cloud-sdk vscode/1.86.0",
-  "google-cloud-sdk vscode/1.87.0",
-  "google-cloud-sdk vscode/1.96.0",
-];
-
 export interface ClientMetadata {
   ideType: string;
   platform: string;
@@ -46,7 +39,6 @@ export interface Fingerprint {
   deviceId: string;
   sessionToken: string;
   userAgent: string;
-  apiClient: string;
   clientMetadata: ClientMetadata;
   createdAt: number;
   /** @deprecated Kept for backward compat with stored fingerprints */
@@ -99,8 +91,7 @@ export function generateFingerprint(): Fingerprint {
   return {
     deviceId: generateDeviceId(),
     sessionToken: generateSessionToken(),
-    userAgent: `antigravity/${getAntigravityVersion()} ${platform}/${arch}`,
-    apiClient: randomFrom(SDK_CLIENTS),
+    userAgent: `antigravity/${getAntigravityVersion()} ${platform}/${arch} ${ANTIGRAVITY_NODEJS_CLIENT}`,
     clientMetadata: {
       ideType: randomFrom(IDE_TYPES),
       platform: matchingPlatform,
@@ -126,8 +117,7 @@ export function collectCurrentFingerprint(): Fingerprint {
   return {
     deviceId: generateDeviceId(),
     sessionToken: generateSessionToken(),
-    userAgent: `antigravity/${getAntigravityVersion()} ${platform}/${arch}`,
-    apiClient: "google-cloud-sdk vscode_cloudshelleditor/0.1",
+    userAgent: `antigravity/${getAntigravityVersion()} ${platform}/${arch} ${ANTIGRAVITY_NODEJS_CLIENT}`,
     clientMetadata: {
       ideType: "ANTIGRAVITY",
       platform: matchingPlatform,

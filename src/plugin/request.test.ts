@@ -633,8 +633,8 @@ it("removes x-api-key header", () => {
         "gemini-cli"
       );
       const headers = result.init.headers as Headers;
-      expect(headers.get("User-Agent")).toBe("google-api-nodejs-client/9.15.1");
-      expect(headers.get("X-Goog-Api-Client")).toBe("gl-node/22.17.0");
+      expect(headers.get("User-Agent")).toBe("google-api-nodejs-client/10.3.0");
+      expect(headers.get("X-Goog-Api-Client")).toBe("gl-node/22.21.1");
       expect(headers.get("Client-Metadata")).toBe("ideType=IDE_UNSPECIFIED,platform=PLATFORM_UNSPECIFIED,pluginType=GEMINI");
     });
 

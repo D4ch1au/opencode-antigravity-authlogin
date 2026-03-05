@@ -96,7 +96,7 @@ describe("initAntigravityVersion — network failure path", () => {
     await initAntigravityVersion()
 
     const headers = getAntigravityHeaders()
-    expect(headers["User-Agent"]).toContain(`Antigravity/${ANTIGRAVITY_VERSION_FALLBACK}`)
+    expect(headers["User-Agent"]).toContain(`antigravity/${ANTIGRAVITY_VERSION_FALLBACK}`)
   })
 
   it("fallback version appears in randomized antigravity headers", async () => {

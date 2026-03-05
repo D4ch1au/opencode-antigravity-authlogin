@@ -1,6 +1,7 @@
 import { exec } from "node:child_process";
 import { tool } from "@opencode-ai/plugin";
 import {
+  ANTIGRAVITY_API_CLIENT,
   ANTIGRAVITY_DEFAULT_PROJECT_ID,
   ANTIGRAVITY_ENDPOINT_FALLBACKS,
   ANTIGRAVITY_ENDPOINT_PROD,
@@ -51,6 +52,7 @@ import { initLogger, createLogger } from "./plugin/logger";
 import { initHealthTracker, getHealthTracker, initTokenTracker, getTokenTracker } from "./plugin/rotation";
 import { initAntigravityVersion } from "./plugin/version";
 import { executeSearch } from "./plugin/search";
+import { getProxyDispatcher, initGlobalProxy, proxyFetch } from "./plugin/proxy";
 import type {
   GetAuth,
   LoaderResult,
@@ -91,6 +93,50 @@ let rateLimitToastShown = false;
 
 // Module-level reference to AccountManager for access from auth.login
 let activeAccountManager: import("./plugin/accounts").AccountManager | null = null;
+
+type ProxyAccountRef = {
+  proxy?: string;
+  email?: string;
+  index?: number;
+  refreshToken?: string;
+  parts?: {
+    refreshToken?: string;
+  };
+};
+
+function resolveAccountProxyId(account: ProxyAccountRef): string | undefined {
+  const refreshToken = account.parts?.refreshToken || account.refreshToken;
+  if (refreshToken) {
+    return refreshToken;
+  }
+  if (account.email) {
+    return account.email;
+  }
+  if (typeof account.index === "number") {
+    return `account-${account.index}`;
+  }
+  return undefined;
+}
+
+function resolveAccountProxyDispatcher(account: ProxyAccountRef): RequestInit["dispatcher"] {
+  return getProxyDispatcher(account.proxy, resolveAccountProxyId(account));
+}
+
+function resolveAuthProxyDispatcher(auth: { refresh: string }): RequestInit["dispatcher"] {
+  const accountManager = activeAccountManager;
+  if (!accountManager) {
+    return getProxyDispatcher();
+  }
+
+  const parsed = parseRefreshParts(auth.refresh);
+  const matchedAccount = accountManager
+    .getAccounts()
+    .find((account) => account.parts.refreshToken === parsed.refreshToken);
+
+  return matchedAccount
+    ? resolveAccountProxyDispatcher(matchedAccount)
+    : getProxyDispatcher();
+}
 
 function cleanupToastCooldowns(): void {
   if (rateLimitToastCooldowns.size > MAX_TOAST_COOLDOWN_ENTRIES) {
@@ -441,6 +487,7 @@ async function verifyAccountAccess(
     email?: string;
     projectId?: string;
     managedProjectId?: string;
+    proxy?: string;
   },
   client: PluginClient,
   providerId: string,
@@ -449,6 +496,12 @@ async function verifyAccountAccess(
   if (!parsed.refreshToken) {
     return { status: "error", message: "Missing refresh token for selected account." };
   }
+
+  const accountDispatcher = resolveAccountProxyDispatcher({
+    proxy: account.proxy,
+    email: account.email,
+    refreshToken: parsed.refreshToken,
+  });
 
   const auth = {
     type: "oauth" as const,
@@ -463,7 +516,7 @@ async function verifyAccountAccess(
 
   let refreshedAuth: Awaited<ReturnType<typeof refreshAccessToken>>;
   try {
-    refreshedAuth = await refreshAccessToken(auth, client, providerId);
+    refreshedAuth = await refreshAccessToken(auth, client, providerId, accountDispatcher);
   } catch (error) {
     if (error instanceof AntigravityTokenRefreshError) {
       return { status: "error", message: error.message };
@@ -484,6 +537,7 @@ async function verifyAccountAccess(
 
   const headers: Record<string, string> = {
     ...getAntigravityHeaders(),
+    "X-Goog-Api-Client": ANTIGRAVITY_API_CLIENT,
     Authorization: `Bearer ${refreshedAuth.access}`,
     "Content-Type": "application/json",
   };
@@ -505,11 +559,12 @@ async function verifyAccountAccess(
 
   let response: Response;
   try {
-    response = await fetch(`${ANTIGRAVITY_ENDPOINT_PROD}/v1internal:streamGenerateContent?alt=sse`, {
+    response = await proxyFetch(`${ANTIGRAVITY_ENDPOINT_PROD}/v1internal:streamGenerateContent?alt=sse`, {
       method: "POST",
       headers,
       body: JSON.stringify(requestBody),
       signal: controller.signal,
+      dispatcher: accountDispatcher,
     });
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") {
@@ -1217,6 +1272,11 @@ export const createAntigravityPlugin = (providerId: string) => async (
   const config = loadConfig(directory);
   initRuntimeConfig(config);
 
+  // Initialize global proxy dispatcher for googleapis.com requests
+  if (config.proxy) {
+    initGlobalProxy(config.proxy);
+  }
+
   // Cached getAuth function for tool access
   let cachedGetAuth: GetAuth | null = null;
   
@@ -1351,12 +1411,13 @@ export const createAntigravityPlugin = (providerId: string) => async (
       // Get access token and project ID
       const parts = parseRefreshParts(auth.refresh);
       const projectId = parts.managedProjectId || parts.projectId || "unknown";
+      const searchDispatcher = resolveAuthProxyDispatcher(auth);
 
       // Ensure we have a valid access token
       let accessToken = auth.access;
       if (!accessToken || accessTokenExpired(auth)) {
         try {
-          const refreshed = await refreshAccessToken(auth, client, providerId);
+          const refreshed = await refreshAccessToken(auth, client, providerId, searchDispatcher);
           accessToken = refreshed?.access;
         } catch (error) {
           return `Error: Failed to refresh access token: ${error instanceof Error ? error.message : String(error)}`;
@@ -1376,6 +1437,7 @@ export const createAntigravityPlugin = (providerId: string) => async (
         accessToken,
         projectId,
         ctx.abort,
+        searchDispatcher,
       );
     },
   });
@@ -1453,12 +1515,12 @@ export const createAntigravityPlugin = (providerId: string) => async (
         apiKey: "",
         async fetch(input, init) {
           if (!isGenerativeLanguageRequest(input)) {
-            return fetch(input, init);
+            return proxyFetch(input, init);
           }
 
           const latestAuth = await getAuth();
           if (!isOAuthAuth(latestAuth)) {
-            return fetch(input, init);
+            return proxyFetch(input, init);
           }
 
           if (accountManager.getAccountCount() === 0) {
@@ -1700,12 +1762,13 @@ export const createAntigravityPlugin = (providerId: string) => async (
             }
 
             accountManager.requestSaveToDisk();
+            const accountDispatcher = resolveAccountProxyDispatcher(account);
 
             let authRecord = accountManager.toAuthDetails(account);
 
             if (accessTokenExpired(authRecord)) {
               try {
-                const refreshed = await refreshAccessToken(authRecord, client, providerId);
+                const refreshed = await refreshAccessToken(authRecord, client, providerId, accountDispatcher);
                 if (!refreshed) {
                   const { failures, shouldCooldown, cooldownMs } = trackAccountFailure(account.index);
                   getHealthTracker().recordFailure(account.index);
@@ -1779,7 +1842,7 @@ export const createAntigravityPlugin = (providerId: string) => async (
 
             let projectContext: ProjectContextResult;
             try {
-              projectContext = await ensureProjectContext(authRecord);
+              projectContext = await ensureProjectContext(authRecord, accountDispatcher);
               resetAccountFailureState(account.index);
             } catch (error) {
               const { failures, shouldCooldown, cooldownMs } = trackAccountFailure(account.index);
@@ -1847,7 +1910,10 @@ export const createAntigravityPlugin = (providerId: string) => async (
 
               try {
                 pushDebug("thinking-warmup: start");
-                const warmupResponse = await fetch(warmupUrl, warmupInit);
+                const warmupResponse = await proxyFetch(warmupUrl, {
+                  ...warmupInit,
+                  dispatcher: accountDispatcher,
+                });
                 const transformed = await transformAntigravityResponse(
                   warmupResponse,
                   true,
@@ -2022,7 +2088,10 @@ export const createAntigravityPlugin = (providerId: string) => async (
                   tokenConsumed = getTokenTracker().consume(account.index);
                 }
 
-                const response = await fetch(prepared.request, prepared.init);
+                const response = await proxyFetch(prepared.request, {
+                  ...prepared.init,
+                  dispatcher: accountDispatcher,
+                });
                 pushDebug(`status=${response.status} ${response.statusText}`);
 
 

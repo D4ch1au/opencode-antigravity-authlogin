@@ -8,8 +8,8 @@ import {
 describe("GEMINI_CLI_HEADERS", () => {
   it("matches Code Assist headers from opencode-gemini-auth", () => {
     expect(GEMINI_CLI_HEADERS).toEqual({
-      "User-Agent": "google-api-nodejs-client/9.15.1",
-      "X-Goog-Api-Client": "gl-node/22.17.0",
+      "User-Agent": "google-api-nodejs-client/10.3.0",
+      "X-Goog-Api-Client": "gl-node/22.21.1",
       "Client-Metadata": "ideType=IDE_UNSPECIFIED,platform=PLATFORM_UNSPECIFIED,pluginType=GEMINI",
     })
   })
@@ -20,15 +20,15 @@ describe("getRandomizedHeaders", () => {
     it("returns static Code Assist headers", () => {
       const headers = getRandomizedHeaders("gemini-cli", "gemini-2.5-pro")
       expect(headers).toEqual({
-        "User-Agent": "google-api-nodejs-client/9.15.1",
-        "X-Goog-Api-Client": "gl-node/22.17.0",
+        "User-Agent": "google-api-nodejs-client/10.3.0",
+        "X-Goog-Api-Client": "gl-node/22.21.1",
         "Client-Metadata": "ideType=IDE_UNSPECIFIED,platform=PLATFORM_UNSPECIFIED,pluginType=GEMINI",
       })
     })
 
     it("ignores requested model and keeps static User-Agent", () => {
       const headers = getRandomizedHeaders("gemini-cli", "gemini-3-pro-preview")
-      expect(headers["User-Agent"]).toBe("google-api-nodejs-client/9.15.1")
+      expect(headers["User-Agent"]).toBe("google-api-nodejs-client/10.3.0")
     })
   })
 
@@ -42,7 +42,7 @@ describe("getRandomizedHeaders", () => {
 
     it("returns User-Agent in antigravity format", () => {
       const headers = getRandomizedHeaders("antigravity")
-      expect(headers["User-Agent"]).toMatch(/^antigravity\//)
+      expect(headers["User-Agent"]).toMatch(/^antigravity\/[\d.]+ (windows\/amd64|darwin\/(arm64|amd64)) google-api-nodejs-client\/10\.3\.0$/)
     })
 
     it("aligns Client-Metadata platform with User-Agent platform", () => {

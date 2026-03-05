@@ -18,6 +18,7 @@
 
 import type { AccountManager, ManagedAccount } from "./accounts";
 import type { PluginClient, OAuthAuthDetails } from "./types";
+import { getProxyDispatcher } from "./proxy";
 import { refreshAccessToken } from "./token";
 import { createLogger } from "./logger";
 
@@ -223,7 +224,15 @@ export class ProactiveRefreshQueue {
       minutesUntilExpiry,
     });
 
-    return refreshAccessToken(auth, this.client, this.providerId);
+    return refreshAccessToken(
+      auth,
+      this.client,
+      this.providerId,
+      getProxyDispatcher(
+        account.proxy,
+        account.parts.refreshToken || account.email || `account-${account.index}`,
+      ),
+    );
   }
 
   /**
