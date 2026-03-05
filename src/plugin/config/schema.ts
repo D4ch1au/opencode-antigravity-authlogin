@@ -1,5 +1,5 @@
 /**
- * Configuration schema for opencode-antigravity-auth plugin.
+ * Configuration schema for opencode-antigravity-authlogin plugin.
  * 
  * Config file locations (in priority order, highest wins):
  * - Project: .opencode/antigravity.json

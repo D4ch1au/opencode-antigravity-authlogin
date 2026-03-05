@@ -76,7 +76,7 @@ jobs:
           echo "Running Opencode Triage on issue ${{ steps.get_issue.outputs.number }}..."
 
           # Move to the repository
-          cd /home/admin/coding/opencode-antigravity-auth
+          cd /home/admin/coding/opencode-antigravity-authlogin
           
           # Run CLI with the agent config
           OUTPUT=$(opencode run --agent triage-bot "Triage issue ${{ steps.get_issue.outputs.number }}")

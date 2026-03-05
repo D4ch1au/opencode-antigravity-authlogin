@@ -41,7 +41,7 @@ export interface UpdateConfigOptions {
 // Constants
 // =============================================================================
 
-const PLUGIN_NAME = "opencode-antigravity-auth@latest";
+const PLUGIN_NAME = "opencode-antigravity-authlogin@latest";
 const SCHEMA_URL = "https://opencode.ai/config.json";
 const OPENCODE_JSON_FILENAME = "opencode.json";
 const OPENCODE_JSONC_FILENAME = "opencode.jsonc";
@@ -137,7 +137,7 @@ export async function updateOpencodeConfig(
 
     // Check if plugin is already in the list (any version)
     const hasPlugin = config.plugin.some((p) =>
-      p.includes("opencode-antigravity-auth")
+      p.includes("opencode-antigravity-authlogin")
     );
     if (!hasPlugin) {
       config.plugin.push(PLUGIN_NAME);

@@ -1,5 +1,5 @@
 /**
- * Cache module for opencode-antigravity-auth plugin.
+ * Cache module for opencode-antigravity-authlogin plugin.
  */
 
 export {

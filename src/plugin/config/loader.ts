@@ -1,5 +1,5 @@
 /**
- * Configuration loader for opencode-antigravity-auth plugin.
+ * Configuration loader for opencode-antigravity-authlogin plugin.
  * 
  * Loads config from files.
  * Priority (lowest to highest):
