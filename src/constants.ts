@@ -73,6 +73,13 @@ export const ANTIGRAVITY_DEFAULT_PROJECT_ID = "rising-fact-p41fc";
 export const ANTIGRAVITY_VERSION_FALLBACK = "1.18.3";
 export const ANTIGRAVITY_NODEJS_CLIENT = "google-api-nodejs-client/10.3.0";
 export const ANTIGRAVITY_API_CLIENT = "gl-node/22.21.1";
+/**
+ * Real Antigravity IDE uses Go's default User-Agent for OAuth token
+ * exchange/refresh at oauth2.googleapis.com.  Matching this prevents a
+ * fingerprint mismatch on the OAuth endpoint.
+ * Reference: CLIProxyAPI commit 8b5af2a (2026-02-22).
+ */
+export const OAUTH_REFRESH_UA = "Go-http-client/2.0";
 let antigravityVersion = ANTIGRAVITY_VERSION_FALLBACK;
 let versionLocked = false;
 

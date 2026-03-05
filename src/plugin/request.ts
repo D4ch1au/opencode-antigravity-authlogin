@@ -1534,6 +1534,45 @@ export function prepareAntigravityRequest(
     }
   }
 
+  // ── Outbound header scrub ──────────────────────────────────────────
+  // Remove headers injected by upstream layers (OpenCode, AI SDK, MCP,
+  // Electron, proxy middleware) that would fingerprint this request as
+  // coming from a non-Antigravity client.
+  // Reference: CLIProxyAPI scrubProxyAndFingerprintHeaders (commit 5dc1848)
+  //
+  // Proxy / forwarding traces
+  headers.delete("X-Forwarded-For");
+  headers.delete("X-Forwarded-Host");
+  headers.delete("X-Forwarded-Proto");
+  headers.delete("X-Forwarded-Port");
+  headers.delete("X-Real-IP");
+  headers.delete("Forwarded");
+  headers.delete("Via");
+  // Third-party SDK identity (OpenAI / Stainless SDK)
+  headers.delete("X-Title");
+  headers.delete("X-Stainless-Lang");
+  headers.delete("X-Stainless-Package-Version");
+  headers.delete("X-Stainless-Os");
+  headers.delete("X-Stainless-Arch");
+  headers.delete("X-Stainless-Runtime");
+  headers.delete("X-Stainless-Runtime-Version");
+  headers.delete("X-Stainless-Retry-Count");
+  headers.delete("X-Stainless-Read-Timeout");
+  // Referrer (browser / OpenCode internal)
+  headers.delete("Http-Referer");
+  headers.delete("Referer");
+  // Browser / Chromium fingerprint headers (Electron fetch may inject these)
+  headers.delete("Sec-Ch-Ua");
+  headers.delete("Sec-Ch-Ua-Mobile");
+  headers.delete("Sec-Ch-Ua-Platform");
+  headers.delete("Sec-Fetch-Mode");
+  headers.delete("Sec-Fetch-Site");
+  headers.delete("Sec-Fetch-Dest");
+  headers.delete("Priority");
+  // Encoding: real IDE sends "gzip, deflate, br"; Electron may add "zstd"
+  headers.delete("Accept-Encoding");
+  headers.set("Accept-Encoding", "gzip, deflate, br");
+
   // Antigravity IDE fingerprint: use fingerprinted User-Agent with fixed API client.
   // Client-Metadata stays in request body metadata (project.ts), not as a header.
   const selectedHeaders = getRandomizedHeaders("antigravity", requestedModel);

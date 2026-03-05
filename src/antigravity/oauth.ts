@@ -9,6 +9,7 @@ import {
   ANTIGRAVITY_SCOPES,
   ANTIGRAVITY_ENDPOINT_FALLBACKS,
   ANTIGRAVITY_LOAD_ENDPOINTS,
+  OAUTH_REFRESH_UA,
   getAntigravityVersion,
   getAntigravityHeaders,
 } from "../constants";
@@ -215,8 +216,7 @@ export async function exchangeAntigravity(
         "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
         "Accept": "*/*",
         "Accept-Encoding": "gzip, deflate, br",
-        "User-Agent": ANTIGRAVITY_NODEJS_CLIENT,
-        "X-Goog-Api-Client": ANTIGRAVITY_API_CLIENT,
+        "User-Agent": OAUTH_REFRESH_UA,
       },
       body: new URLSearchParams({
         client_id: ANTIGRAVITY_CLIENT_ID,
