@@ -1498,9 +1498,17 @@ export function prepareAntigravityRequest(
         };
 
         if (headerStyle === "antigravity") {
-          wrappedBody.requestType = "agent";
+          // Real Antigravity IDE uses different requestType and requestId formats
+          // for image generation vs agent (chat) requests.
+          // Reference: CLIProxyAPI commit 2baf35b (2026-02-27)
+          if (isImageModel) {
+            wrappedBody.requestType = "image_gen";
+            wrappedBody.requestId = `image_gen/${Date.now()}/${crypto.randomUUID()}/12`;
+          } else {
+            wrappedBody.requestType = "agent";
+            wrappedBody.requestId = "agent-" + crypto.randomUUID();
+          }
           wrappedBody.userAgent = "antigravity";
-          wrappedBody.requestId = "agent-" + crypto.randomUUID();
         }
         if (wrappedBody.request && typeof wrappedBody.request === 'object') {
           // Use stable session ID for signature caching across multi-turn conversations
